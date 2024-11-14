@@ -1,23 +1,27 @@
 from flask import Flask, request, jsonify
 from youtube_transcript_api import YouTubeTranscriptApi
 import re
-from openai import OpenAI, AsyncOpenAI
-from openai import OpenAIError
+from openai import AsyncOpenAI, OpenAIError
 import os
 from auth import require_custom_authentication
 import logging
 import asyncio
 import tiktoken
 
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
+# Initialize Flask app
 app = Flask(__name__)
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Set up OpenAI API key from environment variable
+# Set up OpenAI API key
 client = AsyncOpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY"),  # Haalt de OPENAI_API_KEY omgevingsvariabele op
+    api_key=os.environ.get("OPENAI_API_KEY"),
 )
 
 def get_youtube_id(url):
@@ -27,7 +31,7 @@ def get_youtube_id(url):
 
 def process_transcript(video_id):
     """Fetch YouTube transcript and return as a string"""
-    proxy_address = os.environ.get("PROXY")  # Haalt de PROXY omgevingsvariabele op
+    proxy_address = os.environ.get("PROXY")
     transcript = YouTubeTranscriptApi.get_transcript(video_id, proxies={"http": proxy_address, "https": proxy_address})
     full_text = ' '.join([entry['text'] for entry in transcript])
     return full_text
@@ -59,12 +63,8 @@ async def process_chunk(chunk):
     try:
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": """You are a helpful assistant that improves text formatting and adds punctuation. 
-                 You will be given texts from YouTube transcriptions and your task is to apply good formatting.
-                 Do NOT modify individual words."""},
-                {"role": "user", "content": chunk}
-            ]
+            messages=[{"role": "system", "content": "You are a helpful assistant that improves text formatting and adds punctuation."},
+                      {"role": "user", "content": chunk}]
         )
         return response.choices[0].message.content
     except OpenAIError as e:
@@ -82,7 +82,7 @@ async def improve_text_with_gpt4(text):
 
 @app.route('/transcribe', methods=['POST'])
 @require_custom_authentication
-async def transcribe():
+def transcribe():
     """API endpoint to transcribe YouTube videos"""
     youtube_url = request.json.get('url')
     if not youtube_url:
@@ -96,7 +96,7 @@ async def transcribe():
         logger.info(f"videoid = {video_id}")
         transcript_text = process_transcript(video_id)
         logger.info(f"text = {transcript_text}")
-        improved_text = await improve_text_with_gpt4(transcript_text)
+        improved_text = asyncio.run(improve_text_with_gpt4(transcript_text))
 
         return jsonify({"result": improved_text})
     
