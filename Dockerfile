@@ -1,18 +1,18 @@
-# Stap 1: Gebruik een officiële Python runtime als basisimage
+# Gebruik een lichte versie van Python
 FROM python:3.9-slim
 
-# Stap 2: Stel de werkdirectory in voor de app
+# Stel de werkdirectory in
 WORKDIR /app
 
-# Stap 3: Kopieer de afhankelijkheden naar de container en installeer ze
+# Kopieer de afhankelijkheden
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Stap 4: Kopieer de rest van de applicatiecode naar de container
+# Kopieer de rest van de applicatiebestanden
 COPY . /app/
 
-# Stap 5: Stel de poort in waarop de app draait
+# Stel de poort in waarop de app draait (standaard voor Cloud Run is 8080)
 EXPOSE 8080
 
-# Stap 6: Start de applicatie (verander dit afhankelijk van hoe je app start)
+# Start de applicatie (zorg ervoor dat dit het juiste bestand is, bijv. app.py)
 CMD ["python", "app.py"]
