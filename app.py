@@ -5,12 +5,9 @@ from openai import OpenAI, AsyncOpenAI
 from openai import OpenAIError
 import os
 from auth import require_custom_authentication
-from dotenv import load_dotenv
 import logging
 import asyncio
 import tiktoken
-
-load_dotenv()
 
 app = Flask(__name__)
 
@@ -18,9 +15,9 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Set up OpenAI API key
+# Set up OpenAI API key from environment variable
 client = AsyncOpenAI(
-    api_key=os.environ.get("OPENAI_API_KEY"),
+    api_key=os.environ.get("OPENAI_API_KEY"),  # Haalt de OPENAI_API_KEY omgevingsvariabele op
 )
 
 def get_youtube_id(url):
@@ -30,7 +27,7 @@ def get_youtube_id(url):
 
 def process_transcript(video_id):
     """Fetch YouTube transcript and return as a string"""
-    proxy_address = os.environ.get("PROXY")
+    proxy_address = os.environ.get("PROXY")  # Haalt de PROXY omgevingsvariabele op
     transcript = YouTubeTranscriptApi.get_transcript(video_id, proxies={"http": proxy_address, "https": proxy_address})
     full_text = ' '.join([entry['text'] for entry in transcript])
     return full_text
